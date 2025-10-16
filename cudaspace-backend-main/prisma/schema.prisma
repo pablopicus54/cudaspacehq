@@ -1,0 +1,336 @@
+// datasource and generator setup
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------
+//  ENUMS
+// ---------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum BillingCycle {
+  MONTH
+  YEAR
+  QUARTER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Provider {
+  EMAIL
+  GOOGLE
+}
+
+enum PackageType {
+  GPU_HOSTING
+  VPS_HOSTING
+  DEDICATED_SERVER
+}
+
+enum VpsType {
+  WINDOWS_DESKTOP_VPS
+  WINDOWS_SERVER_VPS
+  LINUX_VPS
+  GPU_VPS
+}
+
+enum ServerType {
+  NVME_SERVER
+  SSD_SERVER
+  HDD_SERVER
+  RAID_SERVER
+}
+
+enum PackageStatus {
+  PUBLISHED
+  UNPUBLISHED
+}
+
+// ---------------------------------------------------------
+//  MODEL
+// ---------------------------------------------------------
+
+model User {
+  id               String     @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  number           String
+  email            String     @unique
+  password         String
+  provider         Provider   @default(EMAIL)
+  role             UserRole   @default(USER)
+  status           UserStatus @default(ACTIVE)
+  profileImage     String?
+  stripeCustomerId String?
+
+  otp       String?
+  otpExpiry DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  refreshToken String?
+
+  testimonial          Testimonial?
+  Admin                Admin?
+  userServices         UserServices[]
+  orders               Order[]
+  UserPerchasedPackage UserPerchasedPackage[]
+  PackageCredentials   PackageCredentials[]
+  Notification         Notification[]
+  PendingTask          PendingTask[]
+
+  @@map("users")
+}
+
+model Package {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  monthlyPlanId   String?
+  quaterlyPlanId  String?
+  yearlyPlanId    String?
+  packageType     PackageType
+  serviceName     String
+  perMonthPrice   Float
+  perYearPrice    Float?
+  perQuarterPrice Float?
+  serviceDetails  String[]
+  promotianal     Boolean     @default(false)
+  vpsType         VpsType?
+  serverType      ServerType?
+  packageImage    String
+
+  stripePriceIdPerMonth   String?
+  stripePriceIdPerYear    String?
+  stripePriceIdPerQuarter String?
+  productId               String?
+  totalSales              Int?    @default(0)
+  totalReveneue           Float?  @default(0)
+
+  packageStatus PackageStatus @default(PUBLISHED)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  userServices         UserServices[]
+  UserPerchasedPackage UserPerchasedPackage[]
+  Order                Order[]
+  PackageCredentials   PackageCredentials[]
+
+  @@map("packages")
+}
+
+model UserPerchasedPackage {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String    @db.ObjectId
+  user                User?     @relation(fields: [userId], references: [id])
+  packageId           String?   @db.ObjectId
+  package             Package?  @relation(fields: [packageId], references: [id])
+  stripeSubId         String?   @unique
+  cryptoSubId         String?
+  cryptoPlanId        String?
+  cryptoPayment       Boolean   @default(false)
+  status              String
+  cancelAtPeriodEnd   Boolean   @default(false)
+  amount              Float?
+  canceledAt          DateTime?
+  currentPeriodEnd    DateTime?
+  shouldDowngradeRole Boolean   @default(false)
+
+  billingCycle    BillingCycle?
+  userName        String?
+  operatingSystem String?
+  rootPassword    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("userPerchasedPackages")
+}
+
+model PackagePaymentForUser {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  amount         Float
+  currency       String
+  invoiceId      String
+  subscriptionId String
+  packageId      String   @db.ObjectId
+  paymentDate    DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("packagePaymentForUsers")
+}
+
+model Blog {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  displayImage    String?
+  secondaryImages String[]
+  title           String
+  descriptions    String
+  category        String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("blogs")
+}
+
+model Testimonial {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  message    String
+  isApproved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("testimonials")
+}
+
+model Contact {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name        String
+  email       String
+  subject     String
+  description String
+  status      String @default("Pending")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contacts")
+}
+
+model Admin {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model UserServices {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  packageId String  @db.ObjectId
+  packages  Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("userServices")
+}
+
+model Order {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId String @unique
+  status  String @default("Pending")
+
+  userId          String        @db.ObjectId
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Float?
+  stripeSubId     String?
+  billingCycle    BillingCycle?
+  userName        String?
+  operatingSystem String?
+  rootPassword    String?
+
+  packageId   String?  @db.ObjectId
+  package     Package? @relation(fields: [packageId], references: [id])
+  invoiceUrl  String?
+  cryptoSubId String?
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  PendingTask        PendingTask[]
+  PackageCredentials PackageCredentials?
+
+  @@map("orders")
+}
+
+model PackageCredentials {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  status String @default("Running")
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  packageId String?  @db.ObjectId
+  package   Package? @relation(fields: [packageId], references: [id])
+
+  primaryIp       String
+  loginPassword   String
+  accessPort      String?
+  loginName       String?
+  operatingSystem String?
+
+  orderId String @unique @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("packageCredentials")
+}
+
+model Newsletter {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("newsletters")
+}
+
+model Notification {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id])
+
+  message   String
+  link      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model PendingTask {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  issueType     String
+  link          String?
+  isResolved    Boolean  @default(false)
+  packageName   String?
+  primaryIp     String?
+  loginPassword String?
+  loginName     String?
+  userId        String?  @db.ObjectId
+  user          User?    @relation(fields: [userId], references: [id])
+  orderId       String   @db.ObjectId
+  order         Order?   @relation(fields: [orderId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("pendingTasks")
+}

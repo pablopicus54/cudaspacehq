@@ -1,0 +1,26 @@
+export const billingCycles = [
+  { name: 'Monthly', value: 'MONTH' },
+  { name: 'Quarterly', value: 'QUARTER' },
+  { name: 'Yearly', value: 'YEAR' },
+];
+export const operatingSystems = [
+  'CentOS 8.x 64-bit',
+  'CentOS 7.x 64-bit',
+  'Ubuntu Server 24 LTS 64-bit',
+  'Ubuntu Server 22 LTS 64-bit',
+  'Ubuntu Server 20 LTS 64-bit',
+  'Ubuntu Server 18 LTS 64-bit',
+  'Debian 12.x 64-bit',
+  'Debian 11.x 64-bit',
+  'Debian 10.x 64-bit',
+  'Debian 9.x 64-bit',
+  'Windows Server 2025 Standard Edition x64 ($20.00/month)',
+  'Windows Server 2022 Standard Edition x64 ($20.00/month)',
+  'Windows Server 2019 Standard Edition x64 ($20.00/month)',
+  'Windows 11 Pro Evaluation (No license included)',
+  'Windows 10 Pro Evaluation (No license included)',
+  'Opensuse 15.x 64-bit',
+  'Almalinux 8.x 64-bit',
+  'Fedora 39 64-bit',
+  'Other OS',
+];

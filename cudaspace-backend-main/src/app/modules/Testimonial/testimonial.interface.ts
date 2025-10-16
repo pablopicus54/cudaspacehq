@@ -1,0 +1,3 @@
+interface ITestimonial{
+    message: string
+}
